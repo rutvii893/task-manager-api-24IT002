@@ -56,6 +56,21 @@ app.get('/tasks', (req, res, next) => {
     }
 });
 
+app.get('/tasks/:id', validateTaskId, (req, res, next) => {
+    try {
+        const id = parseInt(req.params.id);
+        const task = tasks.find(t => t.id === id);
+
+        if (!task) {
+            return res.status(404).json({ error: 'Task not found' });
+        }
+
+        res.status(200).json(task);
+    } catch (err) {
+        next(err);
+    }
+});
+
 app.put('/tasks/:id', validateTaskId, (req, res, next) => {
     try {
         const id = parseInt(req.params.id);

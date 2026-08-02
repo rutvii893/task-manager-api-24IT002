@@ -2,20 +2,18 @@
 
 ## 1. Evaluation Table
 
-| Level | What it means | Do we meet this? | My Evidence |
+| Level | What it means | Do we meet this? | Evidence |
 | :--- | :--- | :--- | :--- |
-| **Level 0** | The Swamp of POX (one single URL for everything) | Yes, we passed this | Our API doesn't just use one big endpoint for all actions. We actually separate things out. |
-| **Level 1** | Resources (using separate URLs for different things) | Yes | We use `/tasks` to get the list, and `/tasks/:id` for specific tasks. |
-| **Level 2** | HTTP Verbs & Status Codes | Yes | I made sure to use the right methods (`GET`, `POST`, `PUT`, `DELETE`). The API also sends back real status codes like `201` when a task is created, or `404` if it's missing, instead of just sending `200 OK` for everything. |
-| **Level 3** | HATEOAS (Adding links in the response) | No | Right now, my API just sends back the raw JSON data. It doesn't include any `_links` to tell the client what they can do next. |
+| **Level 0** | Simple HTTP endpoint without resource modeling | Yes | The API is organized around `/tasks` resource endpoints instead of one monolithic route. |
+| **Level 1** | Separate URLs for resources | Yes | We use `/tasks` for the collection and `/tasks/:id` for a single task resource. |
+| **Level 2** | Proper HTTP methods and status codes | Yes | The server uses `GET`, `POST`, `PUT`, and `DELETE` with correct responses like `201`, `200`, `400`, and `404`. |
+| **Level 3** | HATEOAS using hypermedia links | No, but documented as the next step | The API currently returns task data in JSON, while the example below shows how `_links` can be included for discoverability. |
 
-## 2. Checking Level 2 Compliance
-Looking back at the `server.js` file from the previous practical, the code actually already satisfies Level 2. I used the proper HTTP methods for all the CRUD routes and added correct status codes (like 400 for bad requests and 500 for server errors). Because of this, I didn't need to go back and fix any of the routes.
+## 2. Level 2 Compliance Check
+The route design and HTTP behavior meet Level 2 requirements. There were no significant Level 2 violations in the task routes: each action uses the correct verb and meaningful status codes. The main addition was the read-single route, which makes the resource structure clearer and supports better client navigation.
 
-## 3. HATEOAS Awareness (Level 3 Example)
-If I wanted to take this API all the way to Level 3, I would need to start including hypermedia links in the responses. For example, if someone requested a single task, I would add a `_links` object so they know the exact URLs to update or delete it.
-
-It would look something like this:
+## 3. HATEOAS Example (Level 3)
+A Level 3 implementation would include links that guide the client to related actions. For example, a single task response could look like this:
 
 ```json
 {
@@ -25,10 +23,14 @@ It would look something like this:
   "completed": false,
   "_links": {
     "self": "/tasks/123",
-    "delete": "/tasks/123"
+    "update": "/tasks/123",
+    "delete": "/tasks/123",
+    "allTasks": "/tasks"
   }
 }
 ```
 
-## 4. Why Most APIs Stop at Level 2
-From what I've learned, most real-world APIs don't actually bother going to Level 3, and they usually stop at Level 2. The main reason is that HATEOAS just adds way too much complexity. For the server, it takes a lot of extra code to constantly generate the correct links for every single response. And on the frontend/client side, developers usually find it easier to just read the API documentation and hardcode standard routes (like `PUT /tasks/123`), rather than writing complicated logic to parse dynamic `_links` every time they get a response. Basically, Level 2 is the "sweet spot" where the API is clean and standard without being overly complicated to build or use.
+This demonstrates HATEOAS because the client can discover available actions from the response itself instead of hardcoding every route.
+
+## 4. Why Level 3 Is Optional in Most APIs
+Most real-world APIs stop at Level 2 because HATEOAS adds extra complexity without major practical value for simple client-server systems. For this project, Level 2 is sufficient and easier to implement while still following REST principles correctly.
