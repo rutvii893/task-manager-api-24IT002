@@ -1,6 +1,10 @@
 const express = require('express');
+const mongoose = require('mongoose');
+require('dotenv').config();
+const taskRoutes = require('./routes/taskRoutes');
+
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
@@ -14,106 +18,27 @@ const requireJsonContent = (req, res, next) => {
         return res.status(400).json({ error: 'Content-Type must be application/json' });
     }
     next();
-};
+});
 
 app.use(requireJsonContent);
 
-let tasks = [];
-let nextId = 1;
+// Connect to MongoDB
+mongoose.connect(process.env.MONGO_URI)
+    .then(() => console.log("MongoDB Connected"))
+    .catch(err => console.log(err));
 
-const validateTaskId = (req, res, next) => {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-        return res.status(400).json({ error: 'Invalid Task ID format.' });
-    }
-    next();
-};
+// Use Task Routes
+app.use('/tasks', taskRoutes);
 
-app.post('/tasks', (req, res, next) => {
-    try {
-        const { title, description } = req.body;
-        if (!title) {
-            return res.status(400).json({ error: 'Task title is required' });
-        }
-        const newTask = {
-            id: nextId++,
-            title,
-            description: description || '',
-            completed: false
-        };
-        tasks.push(newTask);
-        res.status(201).json(newTask);
-    } catch (err) {
-        next(err);
-    }
-});
-
-app.get('/tasks', (req, res, next) => {
-    try {
-        res.status(200).json(tasks);
-    } catch (err) {
-        next(err);
-    }
-});
-
-app.get('/tasks/:id', validateTaskId, (req, res, next) => {
-    try {
-        const id = parseInt(req.params.id);
-        const task = tasks.find(t => t.id === id);
-
-        if (!task) {
-            return res.status(404).json({ error: 'Task not found' });
-        }
-
-        res.status(200).json(task);
-    } catch (err) {
-        next(err);
-    }
-});
-
-app.put('/tasks/:id', validateTaskId, (req, res, next) => {
-    try {
-        const id = parseInt(req.params.id);
-        const { title, description, completed } = req.body;
-        const taskIndex = tasks.findIndex(t => t.id === id);
-        
-        if (taskIndex === -1) {
-            return res.status(404).json({ error: 'Task not found' });
-        }
-
-        if (title !== undefined) tasks[taskIndex].title = title;
-        if (description !== undefined) tasks[taskIndex].description = description;
-        if (completed !== undefined) tasks[taskIndex].completed = completed;
-
-        res.status(200).json(tasks[taskIndex]);
-    } catch (err) {
-        next(err);
-    }
-});
-
-app.delete('/tasks/:id', validateTaskId, (req, res, next) => {
-    try {
-        const id = parseInt(req.params.id);
-        const taskIndex = tasks.findIndex(t => t.id === id);
-        
-        if (taskIndex === -1) {
-            return res.status(404).json({ error: 'Task not found' });
-        }
-
-        tasks.splice(taskIndex, 1);
-        res.status(200).json({ message: 'Task deleted successfully' });
-    } catch (err) {
-        next(err);
-    }
-});
-
+// 404 Handler
 app.use((req, res, next) => {
     res.status(404).json({ error: 'Endpoint not found' });
 });
 
+// Global Error Handler
 app.use((err, req, res, next) => {
     console.error('Server Error:', err.stack);
-    res.status(500).json({ error: 'Something went wrong' });
+    res.status(500).json({ error: 'Something went wrong', message: err.message });
 });
 
 app.listen(PORT, () => {
