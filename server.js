@@ -1,11 +1,13 @@
 const express = require('express');
 const mongoose = require('mongoose');
+const cors = require('cors');
 require('dotenv').config();
 const taskRoutes = require('./routes/taskRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(cors());
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -18,7 +20,7 @@ const requireJsonContent = (req, res, next) => {
         return res.status(400).json({ error: 'Content-Type must be application/json' });
     }
     next();
-});
+};
 
 app.use(requireJsonContent);
 
@@ -26,6 +28,11 @@ app.use(requireJsonContent);
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB Connected"))
     .catch(err => console.log(err));
+
+// Root Route
+app.get('/', (req, res) => {
+    res.json({ message: 'Welcome to the Task Manager API. Use /tasks for the endpoints.' });
+});
 
 // Use Task Routes
 app.use('/tasks', taskRoutes);
