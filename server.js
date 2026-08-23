@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 const taskRoutes = require('./routes/taskRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -34,7 +35,8 @@ app.get('/', (req, res) => {
     res.json({ message: 'Welcome to the Task Manager API. Use /tasks for the endpoints.' });
 });
 
-// Use Task Routes
+// Use Routes
+app.use('/auth', authRoutes);
 app.use('/tasks', taskRoutes);
 
 // 404 Handler

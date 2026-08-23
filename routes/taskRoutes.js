@@ -1,6 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('../models/Task');
+const auth = require('../middleware/auth');
+const validateTask = require('../middleware/validateTask');
+
+// Protect all task routes
+router.use(auth);
+
 
 // GET all tasks
 router.get('/', async (req, res, next) => {
@@ -32,7 +38,7 @@ router.get('/:id', async (req, res, next) => {
 });
 
 // POST new task
-router.post('/', async (req, res, next) => {
+router.post('/', validateTask, async (req, res, next) => {
     try {
         const task = await Task.create(req.body);
         res.status(201).json(task);
