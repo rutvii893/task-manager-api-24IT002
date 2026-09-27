@@ -9,25 +9,14 @@ const cache = require('../config/cache');
 router.use(auth);
 
 // GET all tasks (Cached)
-router.get('/', async (req, res, next) => {
-    try {
-        const cachedTasks = cache.get('all_tasks');
-        if (cachedTasks) {
-            cache.recordHit();
-            console.log('CACHE HIT: all_tasks');
-            return res.status(200).json(cachedTasks);
-        }
-
-        cache.recordMiss();
-        console.log('CACHE MISS: all_tasks');
-        const tasks = await Task.find();
-        cache.set('all_tasks', tasks);
-        res.status(200).json(tasks);
-    } catch (err) {
-        next(err);
-    }
+router.get('/', async (req, res) => {
+  try {
+    const tasks = await Task.find(); // Direct MongoDB query
+    res.json(tasks);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
-
 // Cache Debug endpoint (Must be placed before /:id)
 router.get('/debug/cache', (req, res) => {
     res.status(200).json(cache.getStats());
