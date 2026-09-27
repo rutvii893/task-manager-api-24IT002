@@ -83,3 +83,89 @@ Express Backend
 Mongoose
 ↓
 MongoDB Atlas
+
+---
+
+## Practical 9 – In-Memory Caching and Query Optimization
+
+### Objective
+Implemented in-memory caching in the Task Management backend using `node-cache` to reduce repeated read queries to MongoDB Atlas, decrease server response time, and demonstrate query optimization.
+
+### Cache Configuration
+- **Library**: `node-cache`
+- **TTL (Time To Live)**: 60 seconds (`stdTTL: 60`)
+- **Check Period**: 120 seconds (`checkperiod: 120`)
+- **All Tasks Cache Key**: `all_tasks`
+- **Individual Task Cache Key**: `task_<id>` (e.g., `task_65f1a2b3c4d5e6f7a8b9c0d1`)
+
+### Cache Flow
+1. **GET `/tasks`**:
+   - Check if `all_tasks` exists in cache.
+   - **Cache HIT**: Increment hit counter, log `CACHE HIT: all_tasks`, and return cached task list immediately without querying MongoDB.
+   - **Cache MISS**: Increment miss counter, log `CACHE MISS: all_tasks`, query MongoDB (`Task.find()`), store the result in cache with key `all_tasks`, and return the response.
+
+2. **GET `/tasks/:id`**:
+   - Check if `task_<id>` exists in cache.
+   - **Cache HIT**: Increment hit counter, log `CACHE HIT: task_<id>`, and return cached task.
+   - **Cache MISS**: Increment miss counter, log `CACHE MISS: task_<id>`, fetch from MongoDB (`Task.findById()`), save into cache under `task_<id>`, and return the task.
+
+### Cache Invalidation
+To prevent serving stale data to clients, cache entries are invalidated immediately after successful database write operations:
+- **POST `/tasks`**: Deletes `all_tasks` cache (`cache.del('all_tasks')`).
+- **PUT `/tasks/:id`**: Deletes both `all_tasks` and `task_<id>` caches (`cache.del('all_tasks')`, `cache.del('task_<id>')`).
+- **DELETE `/tasks/:id`**: Deletes both `all_tasks` and `task_<id>` caches (`cache.del('all_tasks')`, `cache.del('task_<id>')`).
+
+### Cache Debugging
+- **Endpoint**: `GET /tasks/debug/cache`
+- **Protected**: Yes (Requires JWT Bearer token in Authorization header)
+- **Sample Response**:
+```json
+{
+  "hits": 2,
+  "misses": 1
+}
+```
+
+### Performance Testing & Comparison
+
+| Condition | Request 1 | Request 2 | Request 3 | Average |
+|:---|:---:|:---:|:---:|:---:|
+| **Without Cache** | 74 ms | 74 ms | 34 ms | 60.67 ms |
+| **With Cache** | 107 ms (MISS) | 7 ms (HIT) | 11 ms (HIT) | 41.67 ms |
+
+### Observation
+- **Without caching**: The average response time was **60.67 ms**.
+- **With caching**: The average across all three requests was **41.67 ms**, including the initial cache miss.
+- **Cache hits**: The response times dropped drastically to **7 ms** and **11 ms**, demonstrating significantly faster responses for repeated requests.
+
+**Conclusion**: In-memory caching reduces response time for repeated `GET` requests by avoiding repeated MongoDB queries. The first request may take longer (~107 ms) because it fetches data over the network from the database and populates the cache in RAM. Subsequent requests hit RAM directly.
+
+### Limitations
+- **Process-Local Memory**: `node-cache` stores items in the heap memory of the specific Node.js process.
+- **Data Loss on Restart**: In-memory cache is completely cleared whenever the server restarts or crashes.
+- **Multi-Instance Inconsistency**: If multiple Node.js server instances run behind a load balancer, each instance maintains its own isolated cache, causing potential data inconsistency.
+- **Shared Cache Alternative**: For distributed and multi-instance production environments, a centralized distributed cache like **Redis** or **Memcached** is recommended.
+
+### Viva Questions & Answers
+
+1. **Why is caching useful?**
+   - Caching stores frequently accessed data in fast in-memory storage (RAM), reducing latency, minimizing database load, and significantly improving response times.
+
+2. **What is TTL (Time-To-Live)?**
+   - TTL is the expiration duration assigned to cached data after which the cache entry is automatically invalidated and deleted from memory.
+
+3. **Why invalidate cache after POST/PUT/DELETE?**
+   - Invalidation ensures data consistency. When data is created, updated, or deleted in the database, old cached data becomes stale and must be cleared so subsequent read requests fetch the fresh data.
+
+4. **What happens if the cache is not invalidated?**
+   - The application will return stale (outdated or phantom) data to clients until the TTL expires, leading to data inconsistency.
+
+5. **Why is `node-cache` unsuitable for multiple server instances?**
+   - `node-cache` runs in the local memory of a single Node process. Multiple instances cannot share this memory, leading to inconsistent cache states across servers.
+
+6. **What happens to cache after a server restart?**
+   - Since `node-cache` stores data in volatile RAM, all cached entries are cleared on restart. The first subsequent requests will result in cache misses and repopulate the cache from MongoDB.
+
+7. **Why might caching show little improvement with a very small database?**
+   - For tiny local datasets, database query overhead is already very low; network round trips or minimal serialization dominate the time. Caching benefits become significantly more pronounced with remote databases (like MongoDB Atlas), complex queries, or large datasets.
+

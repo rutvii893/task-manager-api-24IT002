@@ -3,24 +3,49 @@ const router = express.Router();
 const Task = require('../models/Task');
 const auth = require('../middleware/auth');
 const validateTask = require('../middleware/validateTask');
+const cache = require('../config/cache');
 
 // Protect all task routes
 router.use(auth);
 
-
-// GET all tasks
+// GET all tasks (Cached)
 router.get('/', async (req, res, next) => {
     try {
+        const cachedTasks = cache.get('all_tasks');
+        if (cachedTasks) {
+            cache.recordHit();
+            console.log('CACHE HIT: all_tasks');
+            return res.status(200).json(cachedTasks);
+        }
+
+        cache.recordMiss();
+        console.log('CACHE MISS: all_tasks');
         const tasks = await Task.find();
+        cache.set('all_tasks', tasks);
         res.status(200).json(tasks);
     } catch (err) {
         next(err);
     }
 });
 
-// GET task by ID
+// Cache Debug endpoint (Must be placed before /:id)
+router.get('/debug/cache', (req, res) => {
+    res.status(200).json(cache.getStats());
+});
+
+// GET task by ID (Cached)
 router.get('/:id', async (req, res, next) => {
     try {
+        const cacheKey = `task_${req.params.id}`;
+        const cachedTask = cache.get(cacheKey);
+        if (cachedTask) {
+            cache.recordHit();
+            console.log(`CACHE HIT: ${cacheKey}`);
+            return res.status(200).json(cachedTask);
+        }
+
+        cache.recordMiss();
+        console.log(`CACHE MISS: ${cacheKey}`);
         const task = await Task.findById(req.params.id);
         if (!task) {
             return res.status(404).json({
@@ -28,6 +53,7 @@ router.get('/:id', async (req, res, next) => {
                 message: "Task not found"
             });
         }
+        cache.set(cacheKey, task);
         res.status(200).json(task);
     } catch (err) {
         if (err.name === 'CastError') {
@@ -41,6 +67,7 @@ router.get('/:id', async (req, res, next) => {
 router.post('/', validateTask, async (req, res, next) => {
     try {
         const task = await Task.create(req.body);
+        cache.del('all_tasks');
         res.status(201).json(task);
     } catch (err) {
         if (err.name === 'ValidationError') {
@@ -71,6 +98,8 @@ router.put('/:id', async (req, res, next) => {
                 message: "Task not found"
             });
         }
+        cache.del('all_tasks');
+        cache.del(`task_${req.params.id}`);
         res.status(200).json(task);
     } catch (err) {
         if (err.name === 'ValidationError') {
@@ -97,6 +126,8 @@ router.delete('/:id', async (req, res, next) => {
                 message: "Task not found"
             });
         }
+        cache.del('all_tasks');
+        cache.del(`task_${req.params.id}`);
         res.status(200).json({ message: 'Task deleted successfully' });
     } catch (err) {
         if (err.name === 'CastError') {
