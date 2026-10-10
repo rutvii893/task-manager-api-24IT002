@@ -169,3 +169,54 @@ To prevent serving stale data to clients, cache entries are invalidated immediat
 7. **Why might caching show little improvement with a very small database?**
    - For tiny local datasets, database query overhead is already very low; network round trips or minimal serialization dominate the time. Caching benefits become significantly more pronounced with remote databases (like MongoDB Atlas), complex queries, or large datasets.
 
+---
+
+## Practical 11 – Containerization with Docker and Docker Compose
+
+### Objective
+Containerize the full-stack Task Management Application comprising the Express.js + MongoDB backend and the React + Vite frontend using Docker and Docker Compose. This ensures environment consistency, isolated service deployment, persistent database storage, and seamless multi-container orchestration.
+
+### Key Components & Files
+1. **Backend Dockerfile** ([`task-manager-api/Dockerfile`](file:///e:/5TH/5th%20sem%20practical/AWF/week-4/task-manager-api/Dockerfile)):
+   - Base Image: `node:18-alpine`
+   - Working Directory: `/app`
+   - Exposes Port: `5000`
+   - Listens on host: `0.0.0.0`
+2. **Frontend Dockerfile** ([`portfolio-24IT002/Dockerfile`](file:///e:/5TH/5th%20sem%20practical/AWF/week-4/portfolio-24IT002/Dockerfile)):
+   - Multi-stage build with `node:18-alpine`
+   - Stage 1: Compiles static assets with `npm run build`
+   - Stage 2: Serves static dist output on port `5173` bound to `0.0.0.0`
+3. **Docker Compose Configuration** ([`docker-compose.yml`](file:///e:/5TH/5th%20sem%20practical/AWF/week-4/docker-compose.yml)):
+   - Services: `frontend`, `backend`, `mongodb`
+   - Network: `app-network` (bridge network)
+   - Volume: `mongo_data` attached to `/data/db` for persistent storage
+   - Service Dependency: Backend waits for MongoDB `service_healthy` check.
+
+### How to Build, Run & Stop
+
+1. **Verify Docker Installation**:
+   ```bash
+   docker --version
+   docker compose version
+   ```
+
+2. **Start Docker Desktop**:
+   Ensure Docker Desktop is launched and running on host system.
+
+3. **Build and Launch Stack**:
+   ```bash
+   docker compose up --build -d
+   ```
+
+4. **Verify Running Services & Logs**:
+   ```bash
+   docker ps
+   docker compose logs -f
+   ```
+
+5. **Stop Stack**:
+   ```bash
+   docker compose down
+   ```
+
+
