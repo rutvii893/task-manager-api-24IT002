@@ -4,6 +4,7 @@ const Task = require('../models/Task');
 const auth = require('../middleware/auth');
 const validateTask = require('../middleware/validateTask');
 const cache = require('../config/cache');
+const taskEvents = require('../events');
 
 // Protect all task routes
 router.use(auth);
@@ -57,7 +58,13 @@ router.post('/', validateTask, async (req, res, next) => {
     try {
         const task = await Task.create(req.body);
         cache.del('all_tasks');
+
+        const apiResponseTime = new Date().toISOString();
+        console.log(`[${apiResponseTime}] [API RESPONSE SENT] HTTP 201 Created for Task ID: ${task._id}`);
         res.status(201).json(task);
+
+        const assignedUser = req.user ? (req.user.email || req.user.id) : 'System User';
+        taskEvents.emit('task-created', { task, assignedUser });
     } catch (err) {
         if (err.name === 'ValidationError') {
             return res.status(400).json({
@@ -117,7 +124,11 @@ router.delete('/:id', async (req, res, next) => {
         }
         cache.del('all_tasks');
         cache.del(`task_${req.params.id}`);
+        
         res.status(200).json({ message: 'Task deleted successfully' });
+
+        const deletedBy = req.user ? (req.user.email || req.user.id) : 'System User';
+        taskEvents.emit('task-deleted', { taskId: req.params.id, title: task.title, deletedBy });
     } catch (err) {
         if (err.name === 'CastError') {
             return res.status(404).json({ success: false, message: 'Task not found' });
