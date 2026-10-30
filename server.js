@@ -26,10 +26,12 @@ const requireJsonContent = (req, res, next) => {
 
 app.use(requireJsonContent);
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB Connected"))
-    .catch(err => console.log(err));
+// Connect to MongoDB only when not in test environment
+if (process.env.NODE_ENV !== 'test') {
+    mongoose.connect(process.env.MONGO_URI)
+        .then(() => console.log("MongoDB Connected"))
+        .catch(err => console.log(err));
+}
 
 // Root Route
 app.get('/', (req, res) => {
@@ -51,6 +53,11 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Something went wrong', message: err.message });
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// Start listening only when executed directly (not when required in tests)
+if (require.main === module) {
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on port ${PORT}`);
+    });
+}
+
+module.exports = app;

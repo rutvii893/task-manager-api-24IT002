@@ -1,5 +1,8 @@
 # Task Management API
 
+[![CI Pipeline](https://github.com/rutvii893/task-manager-api-24IT002/actions/workflows/ci.yml/badge.svg)](https://github.com/rutvii893/task-manager-api-24IT002/actions/workflows/ci.yml)
+[![Root CI Pipeline](https://github.com/rutvii893/task-manager-docker-compose/actions/workflows/ci.yml/badge.svg)](https://github.com/rutvii893/task-manager-docker-compose/actions/workflows/ci.yml)
+
 ## Practical 4
 
 Task Management REST API using:
@@ -218,5 +221,28 @@ Containerize the full-stack Task Management Application comprising the Express.j
    ```bash
    docker compose down
    ```
+
+---
+
+## Practical 12 – CI/CD Pipeline with GitHub Actions
+
+### Objective
+Implement an automated Continuous Integration (CI) pipeline using **GitHub Actions** that automatically checks out the codebase, configures the Node.js runtime, installs dependencies, and executes automated tests on every `push` to the `main` branch.
+
+### Key Implementations
+1. **Automated Testing Setup**:
+   - Installed `jest` and `supertest` as dev dependencies.
+   - Refactored `server.js` minimally to export the Express `app` without eagerly starting the HTTP listener during tests (`if (require.main === module)`).
+   - Mocked MongoDB queries via `jest.spyOn(Task, 'find')` and bypassed JWT auth middleware so unit/integration tests run isolated without requiring a live MongoDB Atlas connection.
+   - Added `npm test` script mapped to Jest (`tests/tasks.test.js`).
+2. **GitHub Actions Workflow (`.github/workflows/ci.yml`)**:
+   - Triggers on `push` events to the `main` branch.
+   - Runs on `ubuntu-latest`.
+   - Checks out code with `actions/checkout@v4`.
+   - Sets up Node.js v18 with `actions/setup-node@v4`.
+   - Runs `npm install` and `npm test`.
+3. **Pipeline Demonstration (Failure & Success)**:
+   - Detailed walkthrough, screenshot guide, and concepts documented in [`docs/practical-12-cicd.md`](docs/practical-12-cicd.md).
+
 
 
