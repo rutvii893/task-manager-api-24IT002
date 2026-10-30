@@ -244,5 +244,27 @@ Implement an automated Continuous Integration (CI) pipeline using **GitHub Actio
 3. **Pipeline Demonstration (Failure & Success)**:
    - Detailed walkthrough, screenshot guide, and concepts documented in [`docs/practical-12-cicd.md`](docs/practical-12-cicd.md).
 
+---
+
+## Practical 13 – AI API Integration into a Web Application
+
+### Objective
+Integrate an external AI API (Google Gemini API using `gemini-2.5-flash`) to generate context-aware task descriptions directly within the Task Management application.
+
+### Key Implementations
+1. **Backend AI Integration**:
+   - Integrated the official Google GenAI SDK (`@google/genai`) via `services/aiService.js` using `gemini-2.5-flash`.
+   - Maintained endpoint `POST /api/ai/generate-description`.
+   - Uses `GEMINI_API_KEY` with placeholder guard and secure environment loading.
+   - Enforced client rate-limiting (1 request per task per minute).
+   - Ensured external failure gracefully degrades with friendly fallback messaging (`503 Service Unavailable`).
+2. **Frontend Task Creation Form**:
+   - Added a **"✨ Generate Description"** button with loading spinner.
+   - Inserted the suggested text into an editable `<textarea>` so the user can review and edit before saving.
+   - Added user notifications and a responsible AI disclaimer.
+3. **Documentation**:
+   - Complete architectural walkthrough, responsible AI notes, and demonstration instructions documented in [`docs/practical-13-ai-integration.md`](docs/practical-13-ai-integration.md).
+
+
 
 

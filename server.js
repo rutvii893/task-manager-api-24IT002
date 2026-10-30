@@ -4,6 +4,7 @@ const cors = require('cors');
 require('dotenv').config();
 const taskRoutes = require('./routes/taskRoutes');
 const authRoutes = require('./routes/authRoutes');
+const aiRoutes = require('./routes/aiRoutes');
 require('./listeners');
 
 const app = express();
@@ -41,6 +42,7 @@ app.get('/', (req, res) => {
 // Use Routes
 app.use('/auth', authRoutes);
 app.use('/tasks', taskRoutes);
+app.use('/api/ai', aiRoutes);
 
 // 404 Handler
 app.use((req, res, next) => {
